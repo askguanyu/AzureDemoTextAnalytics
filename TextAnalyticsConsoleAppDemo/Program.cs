@@ -3,22 +3,14 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.CognitiveServices.Language.TextAnalytics;
     using Microsoft.Azure.CognitiveServices.Language.TextAnalytics.Models;
 
     class Program
     {
-        static void Main(string[] args)
+        private static void DetectLanguage(ITextAnalyticsAPI client)
         {
-            Console.WriteLine("Start...");
-
-            // Create a client.
-            ITextAnalyticsAPI client = new TextAnalyticsAPI();
-            client.AzureRegion = AzureRegions.Eastus2;
-            client.SubscriptionKey = "YOUR KEY";
-
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-
             // Extracting language
             Console.WriteLine("===== LANGUAGE EXTRACTION ======");
 
@@ -37,7 +29,10 @@
             {
                 Console.WriteLine($"Document ID: {document.Id} , Language: {document.DetectedLanguages[0].Name} , Text: {inputs1.FirstOrDefault(i => i.Id == document.Id).Text}");
             }
+        }
 
+        private static void KeyPhrases(ITextAnalyticsAPI client)
+        {
             // Getting key-phrases
             Console.WriteLine("\n\n===== KEY-PHRASE EXTRACTION ======");
 
@@ -66,7 +61,10 @@
                 Console.WriteLine($"Text: {inputs2.FirstOrDefault(i => i.Id == document.Id).Text}");
                 Console.WriteLine();
             }
+        }
 
+        private static void Sentiment(ITextAnalyticsAPI client)
+        {
             // Extracting sentiment
             Console.WriteLine("\n\n===== SENTIMENT ANALYSIS ======");
 
@@ -86,6 +84,56 @@
             {
                 Console.WriteLine($"Document ID: {document.Id} , Sentiment Score: {document.Score:0.00} , Text: {inputs3.FirstOrDefault(i => i.Id == document.Id).Text}");
             }
+        }
+
+        private static void SentimentConsoleInput(ITextAnalyticsAPI client)
+        {
+            // Extracting sentiment
+            Console.WriteLine("\n\n===== SENTIMENT ANALYSIS CONSOLE INPUT ======");
+
+            var canBreak = false;
+
+            for (; ; )
+            {
+                Console.WriteLine("Please type your comment and press 'Enter', 'Q' or 'q' to exit.");
+                var input = Console.ReadLine();
+                canBreak = input.Equals("q", StringComparison.OrdinalIgnoreCase);
+
+                if (canBreak)
+                {
+                    Console.WriteLine("Exit.");
+                    break;
+                }
+
+                SentimentBatchResult result = client.Sentiment(new MultiLanguageBatchInput(new List<MultiLanguageInput> { new MultiLanguageInput()
+                {
+                    Id = DateTimeOffset.UtcNow.ToFileTime().ToString(),
+                    Text = input
+                }}));
+
+                foreach (var document in result.Documents)
+                {
+                    Console.WriteLine($"Document ID: {document.Id} , Sentiment Score: {document.Score:0.00} , Text: {input}");
+                }
+
+                Console.WriteLine();
+            }
+        }
+
+        static void Main(string[] args)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.WriteLine("Start...");
+
+            // Create a client.
+            ITextAnalyticsAPI client = new TextAnalyticsAPI();
+            client.AzureRegion = AzureRegions.Eastus2;
+            client.SubscriptionKey = "YOUR KEY";
+
+            DetectLanguage(client);
+            KeyPhrases(client);
+            Sentiment(client);
+            SentimentConsoleInput(client);
 
             Console.WriteLine("Done!");
             Console.ReadLine();
